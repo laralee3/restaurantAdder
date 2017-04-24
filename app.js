@@ -1,28 +1,13 @@
-// This example requires the Places library. Include the libraries=places
-// parameter when you first load the API. For example:
-// <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
-
-var map;
 var infoWindow;
+var initModal;
+var map;
+var mapContainer
 var service;
 
 // var seattle = {lat: 47.657714, lng: -122.3498098};
-
-
-
-
-
-
-// This sample uses the Place Autocomplete widget to allow the user to search
-// for and select a place. The sample then displays an info window containing
-// the place ID and other information about the place that the user has
-// selected.
-
-// This example requires the Places library. Include the libraries=places
-// parameter when you first load the API. For example:
-// <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
-
 function initMap() {
+    console.log('initMap');
+
     var map = new google.maps.Map(document.getElementById('map'), {
         center: {
             lat: 47.657714,
@@ -69,6 +54,8 @@ function initMap() {
         });
         marker.setVisible(true);
 
+        console.log('place ', place );
+
         infowindowContent.children['place-name'].textContent = place.name;
         infowindowContent.children['place-id'].textContent = place.place_id;
         infowindowContent.children['place-address'].textContent =
@@ -76,3 +63,29 @@ function initMap() {
         infowindow.open(map, marker);
     });
 }
+
+function loadGooglePlaceIdFinder(apikey) {
+    var target = 'https://maps.googleapis.com/maps/api/js?key=' + apikey + '&libraries=places';
+
+    console.log('target ', target);
+
+    $.getScript(target, function (data, textStatus, jqxhr) {
+        initMap();
+    });
+}
+
+// Document Ready
+$(function () {
+    initModal = $('.initModal');
+    mapContainer = $('.mapContainer');
+
+    //Event Handlers
+    $('#authData').submit(function (e) {
+        e.preventDefault();
+        var apikey = $('#authData .apikey').val();
+
+        initModal.hide();
+        mapContainer.show();
+        loadGooglePlaceIdFinder(apikey);
+    });
+});
