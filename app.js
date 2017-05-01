@@ -1,10 +1,113 @@
+var addRestaurantButton;
+var apikey;
+var authorizeButton;
 var infoWindow;
 var initModal;
 var map;
 var mapContainer
+var newRestaurant = {};
+var oauthclientid;
 var service;
+var sheetId;
+var signoutButton;
 
-// var seattle = {lat: 47.657714, lng: -122.3498098};
+// Ruby Server Start
+// ruby -rwebrick -e'WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd).start' 
+
+
+// Array of API discovery doc URLs for APIs used by the quickstart
+var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
+
+// Authorization scopes required by the API; multiple scopes can be
+// included, separated by spaces.
+var SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+
+function handleClientLoad() {
+    console.log('handleClientLoad');
+    gapi.load('client:auth2', initClient);
+}
+
+function initClient() {
+    console.log('initClient sheets');
+    gapi.client.init({
+        discoveryDocs: DISCOVERY_DOCS,
+        clientId: oauthclientid,
+        scope: SCOPES
+    }).then(function () {
+        // Listen for sign-in state changes.
+        gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
+
+        // Handle the initial sign-in state.
+        updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+        authorizeButton.click(handleAuthClick);
+        signoutButton.click(handleSignoutClick);
+    });
+}
+
+/**
+ *  Called when the signed in status changes, to update the UI
+ *  appropriately. After a sign-in, the API is called.
+ */
+function updateSigninStatus(isSignedIn) {
+    if (isSignedIn) {
+        authorizeButton.hide();
+        signoutButton.show();
+    } else {
+        authorizeButton.show();
+        signoutButton.hide();
+    }
+}
+
+/**
+ *  Sign in the user upon button click.
+ */
+function handleAuthClick(event) {
+    console.log('handleAuthClick');
+
+    gapi.auth2.getAuthInstance().signIn();
+}
+
+/**
+ *  Sign out the user upon button click.
+ */
+function handleSignoutClick(event) {
+    console.log('handleSignoutClick');
+
+    gapi.auth2.getAuthInstance().signOut();
+}
+
+// TODO: Revamp and move this someplace else
+function appendToSheet() {
+    console.log('appendToSheet fire');
+
+    var appendData = {
+        "values": [
+            [newRestaurant.name,
+                newRestaurant.cuisineType,
+                newRestaurant.address,
+                newRestaurant.city,
+                newRestaurant.state,
+                newRestaurant.zip,
+                newRestaurant.website,
+                newRestaurant.rating
+            ]
+        ]
+    };
+
+    var request = {
+        spreadsheetId: sheetId,
+        range: 'Restaurants',
+        valueInputOption: 'RAW',
+
+        resource: appendData
+    };
+
+    gapi.client.sheets.spreadsheets.values.append(request).then(function (response) {
+        console.log('response after append call ', response);
+    });
+}
+
+
 function initMap() {
     console.log('initMap');
 
@@ -54,7 +157,35 @@ function initMap() {
         });
         marker.setVisible(true);
 
-        console.log('place ', place );
+
+
+
+        /////////////////////////////////
+
+        // TODO: Separate out all this logic, don't run it every time a place is updated
+        // TODO: Pull from individual address components instead of formmatted
+
+        console.log('place ', place);
+        console.log('place name ', place.name);
+        addRestaurantButton.text('Add ' + place.name);
+
+        newRestaurant.name = place.name;
+        newRestaurant.cuisineType = 'N/A';
+
+        //601 Queen Anne Ave N, Seattle, WA 98109, USA
+
+        var tempAddress = place.formatted_address.split(','); // TEMP ONLY, NOT ROBUST
+        newRestaurant.address = tempAddress[0];
+        newRestaurant.city = tempAddress[1];
+        newRestaurant.state = tempAddress[2].split(' ')[1];
+        newRestaurant.zip = tempAddress[2].split(' ')[2];
+        newRestaurant.website = place.website;
+        newRestaurant.rating = place.rating;
+
+
+        /////////////////////////////////
+
+
 
         infowindowContent.children['place-name'].textContent = place.name;
         infowindowContent.children['place-id'].textContent = place.place_id;
@@ -74,18 +205,54 @@ function loadGooglePlaceIdFinder(apikey) {
     });
 }
 
+function loadGoogleApi(apikey) {
+    var target = 'https://apis.google.com/js/api.js';
+
+    console.log('target ', target);
+
+    $.getScript(target, function (data, textStatus, jqxhr) {
+        handleClientLoad();
+    });
+}
+
 // Document Ready
 $(function () {
     initModal = $('.initModal');
     mapContainer = $('.mapContainer');
+    authorizeButton = $('#authorize-button');
+    signoutButton = $('#signout-button');
+    addRestaurantButton = $('#add-restaurant');
+
+    addRestaurantButton.click(appendToSheet);
+
+    var urlParams = new URLSearchParams(window.location.search);
+
+    var tempApiKey = urlParams.get('apiKey');
+    var tempOathId = urlParams.get('oathId');
+    var tempSheetId = urlParams.get('sheetId');
+
+    if (tempApiKey) {
+        $('#authData .apikey').val(tempApiKey);
+    }
+
+    if (tempOathId) {
+        $('#authData .oauthclientid').val(tempOathId);
+    }
+
+    if (tempSheetId) {
+        $('#authData .sheetId').val(tempSheetId);
+    }
 
     //Event Handlers
     $('#authData').submit(function (e) {
         e.preventDefault();
-        var apikey = $('#authData .apikey').val();
+        apikey = $('#authData .apikey').val();
+        oauthclientid = $('#authData .oauthclientid').val();
+        sheetId = $('#authData .sheetId').val();
 
         initModal.hide();
         mapContainer.show();
         loadGooglePlaceIdFinder(apikey);
+        loadGoogleApi();
     });
 });

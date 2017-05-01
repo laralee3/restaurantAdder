@@ -23,12 +23,25 @@
     <h1>Enter Auth data</h1>
     <form id="authData">
       <div>
-        <label>API key</label>
-        <input class="apikey" type="text">
+        <div>
+          <label>API key</label>
+          <input class="apikey" type="text">
+        </div>
+        <div>
+          <label>Oauth Client Id</label>
+          <input class="oauthclientid" type="text">
+        </div>
+        <div>
+          <label>Sheet Id</label>
+          <input class="sheetId" type="text">
+        </div>
         <input type="submit">
       </div>
     </form>
   </div>
+  <button id="add-restaurant">Add</button>
+  <button id="authorize-button" style="display: none;">Authorize</button>
+  <button id="signout-button" style="display: none;">Sign Out</button>
 </body>
 
 </html>
