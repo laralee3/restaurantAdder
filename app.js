@@ -54,9 +54,8 @@ function initClient() {
 }
 
 function updateSigninStatus(isSignedIn) {
-    console.log('updateSignedInStatus isSignedIn ', isSignedIn);
+    // TODO - Disallow interaction until post authentication
     if (isSignedIn) {
-        addRestaurantButton.show();
         authorizeButton.hide();
         signoutButton.show();
     } else {
@@ -99,6 +98,7 @@ function initMap() {
     });
 
     autocomplete.addListener('place_changed', function () {
+        addRestaurantButton.show(); // TODO: Inefficient, do this only once someplace else
         infowindow.close();
         var place = autocomplete.getPlace();
         if (!place.geometry) {
