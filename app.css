@@ -1,17 +1,32 @@
-/* Always set the map height explicitly to define the size of the div
-       * element that contains the map. */
-#map {
-    height: 80%;
-}
-
-
-/* Optional: Makes the sample page fill the window. */
-
 html,
-body {
+body,
+#map {
     height: 100%;
     margin: 0;
     padding: 0;
+}
+
+#add-restaurant,
+#authorize-button,
+#infowindow-content,
+#signout-button {
+    display: none;
+}
+
+#add-restaurant {
+    position: absolute;
+    left: 50%;
+    margin-top: 20px;
+}
+
+#map #infowindow-content {
+    display: inline;
+}
+
+#signout-button {
+    position: absolute;
+    bottom: 0;
+    right: 0;
 }
 
 .controls {
@@ -36,14 +51,18 @@ body {
     border-color: #4d90fe;
 }
 
-.title {
-    font-weight: bold;
+.initModal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
-#infowindow-content {
+.mapContainer {
+    height: 90%;
     display: none;
 }
 
-#map #infowindow-content {
-    display: inline;
+.title {
+    font-weight: bold;
 }

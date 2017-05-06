@@ -1,21 +1,47 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
-    <meta charset="utf-8">
-    <title>Restaurant Adder</title>
-    <script src="app.js"></script>
-    <link rel="stylesheet" type="text/css" href="app.css">
-  </head>
-  <body>
-    <input id="pac-input" class="controls" type="text"
-        placeholder="Enter a location">
+
+<head>
+  <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <title>Restaurant Adder</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="app.js"></script>
+  <link rel="stylesheet" type="text/css" href="app.css">
+</head>
+
+<body>
+  <div class="mapContainer">
+    <input id="pac-input" class="controls" type="text" placeholder="Enter a location">
     <div id="map"></div>
     <div id="infowindow-content">
-      <span id="place-name"  class="title"></span><br>
-      Place ID <span id="place-id"></span><br>
+      <span id="place-name" class="title"></span><br> Place ID <span id="place-id"></span><br>
       <span id="place-address"></span>
     </div>
-    <script src="https://maps.googleapis.com/maps/api/js?key=API_KEY_HERE&libraries=places&callback=initMap" async defer></script>
-  </body>
+  </div>
+  <div class="initModal">
+    <h1>Enter Auth data</h1>
+    <form id="authData">
+      <div>
+        <div>
+          <label>API key</label>
+          <input class="apikey" type="text">
+        </div>
+        <div>
+          <label>Oauth Client Id</label>
+          <input class="oauthclientid" type="text">
+        </div>
+        <div>
+          <label>Sheet Id</label>
+          <input class="sheetId" type="text">
+        </div>
+        <input type="submit">
+      </div>
+    </form>
+  </div>
+  <button id="add-restaurant">Add</button>
+  <button id="authorize-button">Authorize</button>
+  <button id="signout-button">Sign Out</button>
+</body>
+
 </html>

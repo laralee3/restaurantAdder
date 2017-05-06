@@ -1,34 +1,83 @@
-// This example requires the Places library. Include the libraries=places
-// parameter when you first load the API. For example:
-// <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
-
-var map;
+var addRestaurantButton;
+var apikey;
+var authorizeButton;
+var defaultZoom = 13;
 var infoWindow;
+var initModal;
+var map;
+var mapContainer
+var newRestaurant = {};
+var oauthclientid;
 var service;
+var sheetId;
+var signoutButton;
+var und = 'undefined';
 
-// var seattle = {lat: 47.657714, lng: -122.3498098};
+var newRestaurantDefault = {
+    cuisineType: und,
+    coordinates: {}
+};
 
+var seattleCoord = {
+    lat: 47.657714,
+    lng: -122.3498098
+};
 
+// Ruby Server Start
+// ruby -rwebrick -e'WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd).start' 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Google Api
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
+var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
+var SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
+function handleClientLoad() {
+    gapi.load('client:auth2', initClient);
+}
 
-// This sample uses the Place Autocomplete widget to allow the user to search
-// for and select a place. The sample then displays an info window containing
-// the place ID and other information about the place that the user has
-// selected.
+function initClient() {
+    gapi.client.init({
+        discoveryDocs: DISCOVERY_DOCS,
+        clientId: oauthclientid,
+        scope: SCOPES
+    }).then(function () {
+        // Listen for sign-in state changes.
+        gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
 
-// This example requires the Places library. Include the libraries=places
-// parameter when you first load the API. For example:
-// <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places">
+        // Handle the initial sign-in state.
+        updateSigninStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
+        authorizeButton.click(handleAuthClick);
+        signoutButton.click(handleSignoutClick);
+    });
+}
+
+function updateSigninStatus(isSignedIn) {
+    console.log('updateSignedInStatus isSignedIn ', isSignedIn);
+    if (isSignedIn) {
+        addRestaurantButton.show();
+        authorizeButton.hide();
+        signoutButton.show();
+    } else {
+        addRestaurantButton.hide();
+        authorizeButton.show();
+        signoutButton.hide();
+    }
+}
+
+function handleAuthClick(event) {
+    gapi.auth2.getAuthInstance().signIn();
+}
+
+function handleSignoutClick(event) {
+    gapi.auth2.getAuthInstance().signOut();
+}
 
 function initMap() {
     var map = new google.maps.Map(document.getElementById('map'), {
-        center: {
-            lat: 47.657714,
-            lng: -122.3498098
-        },
-        zoom: 13
+        center: seattleCoord,
+        zoom: defaultZoom
     });
 
     var input = document.getElementById('pac-input');
@@ -44,6 +93,7 @@ function initMap() {
     var marker = new google.maps.Marker({
         map: map
     });
+
     marker.addListener('click', function () {
         infowindow.open(map, marker);
     });
@@ -62,7 +112,6 @@ function initMap() {
             map.setZoom(17);
         }
 
-        // Set the position of the marker using the place ID and location.
         marker.setPlace({
             placeId: place.place_id,
             location: place.geometry.location
@@ -71,8 +120,157 @@ function initMap() {
 
         infowindowContent.children['place-name'].textContent = place.name;
         infowindowContent.children['place-id'].textContent = place.place_id;
-        infowindowContent.children['place-address'].textContent =
-            place.formatted_address;
+        infowindowContent.children['place-address'].textContent = place.formatted_address;
         infowindow.open(map, marker);
+
+        handleNewPlace(place);
     });
 }
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Utility
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+function appendToSheet() {
+    var appendData = {
+        "values": [
+            [newRestaurant.name,
+                newRestaurant.cuisineType,
+                newRestaurant.address,
+                newRestaurant.city,
+                newRestaurant.state,
+                newRestaurant.zip,
+                newRestaurant.website,
+                newRestaurant.rating,
+                null,
+                null,
+                null,
+                null,
+                null,
+                newRestaurant.coordinates.lat,
+                newRestaurant.coordinates.lng
+            ]
+        ]
+    };
+
+    var request = {
+        spreadsheetId: sheetId,
+        range: 'Restaurants',
+        valueInputOption: 'RAW',
+
+        resource: appendData
+    };
+
+    gapi.client.sheets.spreadsheets.values.append(request).then(function (response) {
+        // TODO: Response handler?
+    });
+}
+
+function handleNewPlace(place) {
+    newRestaurant = newRestaurantDefault;
+
+    addRestaurantButton.text('Add ' + place.name);
+
+    newRestaurant.name = place.name || und;
+    newRestaurant.website = place.website || und;
+    newRestaurant.rating = place.rating || und;
+    newRestaurant.coordinates.lat = place.geometry.location.lat() || und;
+    newRestaurant.coordinates.lng = place.geometry.location.lng() || und;
+
+    parseAddressComponents(place.address_components);
+}
+
+function loadGoogleApi(apikey) {
+    var target = 'https://apis.google.com/js/api.js';
+
+    $.getScript(target, function (data, textStatus, jqxhr) {
+        handleClientLoad();
+    });
+}
+
+function loadGooglePlaceIdFinder(apikey) {
+    var target = 'https://maps.googleapis.com/maps/api/js?key=' + apikey + '&libraries=places';
+
+    $.getScript(target, function (data, textStatus, jqxhr) {
+        initMap();
+    });
+}
+
+function parseAddressComponents(components) {
+    components.forEach(function (component) {
+        component.types.forEach(function (type) {
+            var shortName = component.short_name;
+
+            if (type === 'street_number') {
+                newRestaurant.address = shortName;
+                return;
+            }
+
+            if (type === 'route') {
+                // TODO: Handle street_number and route better for cases where they don't exist
+                newRestaurant.address += ' ';
+                newRestaurant.address += shortName;
+                return;
+            }
+
+            if (type === 'locality') {
+                newRestaurant.city = shortName;
+                return;
+            }
+
+            if (type === 'administrative_area_level_1') {
+                newRestaurant.state = shortName;
+                return;
+            }
+
+            if (type === 'postal_code') {
+                newRestaurant.zip = parseInt(shortName);
+                return;
+            }
+        })
+    })
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Document Ready / Init
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+$(function () {
+    initModal = $('.initModal');
+    mapContainer = $('.mapContainer');
+    authorizeButton = $('#authorize-button');
+    signoutButton = $('#signout-button');
+    addRestaurantButton = $('#add-restaurant');
+
+    addRestaurantButton.click(appendToSheet);
+
+    var urlParams = new URLSearchParams(window.location.search);
+
+    var tempApiKey = urlParams.get('apiKey');
+    var tempOathId = urlParams.get('oathId');
+    var tempSheetId = urlParams.get('sheetId');
+
+    if (tempApiKey) {
+        $('#authData .apikey').val(tempApiKey);
+    }
+
+    if (tempOathId) {
+        $('#authData .oauthclientid').val(tempOathId);
+    }
+
+    if (tempSheetId) {
+        $('#authData .sheetId').val(tempSheetId);
+    }
+
+    //Event Handlers
+    $('#authData').submit(function (e) {
+        e.preventDefault();
+        apikey = $('#authData .apikey').val();
+        oauthclientid = $('#authData .oauthclientid').val();
+        sheetId = $('#authData .sheetId').val();
+
+        initModal.hide();
+        mapContainer.show();
+        loadGooglePlaceIdFinder(apikey);
+        loadGoogleApi();
+    });
+});
