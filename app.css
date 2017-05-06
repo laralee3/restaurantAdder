@@ -6,24 +6,27 @@ body,
     padding: 0;
 }
 
-#infowindow-content {
+#add-restaurant,
+#authorize-button,
+#infowindow-content,
+#signout-button {
     display: none;
+}
+
+#add-restaurant {
+    position: absolute;
+    left: 50%;
+    margin-top: 20px;
 }
 
 #map #infowindow-content {
     display: inline;
 }
 
-.initModal {
+#signout-button {
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
-.mapContainer {
-    height: 80%;
-    display: none;
+    bottom: 0;
+    right: 0;
 }
 
 .controls {
@@ -46,6 +49,18 @@ body,
 
 .controls:focus {
     border-color: #4d90fe;
+}
+
+.initModal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.mapContainer {
+    height: 90%;
+    display: none;
 }
 
 .title {

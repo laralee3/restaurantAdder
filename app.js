@@ -1,6 +1,7 @@
 var addRestaurantButton;
 var apikey;
 var authorizeButton;
+var defaultZoom = 13;
 var infoWindow;
 var initModal;
 var map;
@@ -10,25 +11,33 @@ var oauthclientid;
 var service;
 var sheetId;
 var signoutButton;
+var und = 'undefined';
+
+var newRestaurantDefault = {
+    cuisineType: und,
+    coordinates: {}
+};
+
+var seattleCoord = {
+    lat: 47.657714,
+    lng: -122.3498098
+};
 
 // Ruby Server Start
 // ruby -rwebrick -e'WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd).start' 
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Google Api
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// Array of API discovery doc URLs for APIs used by the quickstart
 var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
-
-// Authorization scopes required by the API; multiple scopes can be
-// included, separated by spaces.
 var SCOPES = "https://www.googleapis.com/auth/spreadsheets";
 
 function handleClientLoad() {
-    console.log('handleClientLoad');
     gapi.load('client:auth2', initClient);
 }
 
 function initClient() {
-    console.log('initClient sheets');
     gapi.client.init({
         discoveryDocs: DISCOVERY_DOCS,
         clientId: oauthclientid,
@@ -44,79 +53,31 @@ function initClient() {
     });
 }
 
-/**
- *  Called when the signed in status changes, to update the UI
- *  appropriately. After a sign-in, the API is called.
- */
 function updateSigninStatus(isSignedIn) {
+    console.log('updateSignedInStatus isSignedIn ', isSignedIn);
     if (isSignedIn) {
+        addRestaurantButton.show();
         authorizeButton.hide();
         signoutButton.show();
     } else {
+        addRestaurantButton.hide();
         authorizeButton.show();
         signoutButton.hide();
     }
 }
 
-/**
- *  Sign in the user upon button click.
- */
 function handleAuthClick(event) {
-    console.log('handleAuthClick');
-
     gapi.auth2.getAuthInstance().signIn();
 }
 
-/**
- *  Sign out the user upon button click.
- */
 function handleSignoutClick(event) {
-    console.log('handleSignoutClick');
-
     gapi.auth2.getAuthInstance().signOut();
 }
 
-// TODO: Revamp and move this someplace else
-function appendToSheet() {
-    console.log('appendToSheet fire');
-
-    var appendData = {
-        "values": [
-            [newRestaurant.name,
-                newRestaurant.cuisineType,
-                newRestaurant.address,
-                newRestaurant.city,
-                newRestaurant.state,
-                newRestaurant.zip,
-                newRestaurant.website,
-                newRestaurant.rating
-            ]
-        ]
-    };
-
-    var request = {
-        spreadsheetId: sheetId,
-        range: 'Restaurants',
-        valueInputOption: 'RAW',
-
-        resource: appendData
-    };
-
-    gapi.client.sheets.spreadsheets.values.append(request).then(function (response) {
-        console.log('response after append call ', response);
-    });
-}
-
-
 function initMap() {
-    console.log('initMap');
-
     var map = new google.maps.Map(document.getElementById('map'), {
-        center: {
-            lat: 47.657714,
-            lng: -122.3498098
-        },
-        zoom: 13
+        center: seattleCoord,
+        zoom: defaultZoom
     });
 
     var input = document.getElementById('pac-input');
@@ -132,6 +93,7 @@ function initMap() {
     var marker = new google.maps.Marker({
         map: map
     });
+
     marker.addListener('click', function () {
         infowindow.open(map, marker);
     });
@@ -150,72 +112,128 @@ function initMap() {
             map.setZoom(17);
         }
 
-        // Set the position of the marker using the place ID and location.
         marker.setPlace({
             placeId: place.place_id,
             location: place.geometry.location
         });
         marker.setVisible(true);
 
-
-
-
-        /////////////////////////////////
-
-        // TODO: Separate out all this logic, don't run it every time a place is updated
-        // TODO: Pull from individual address components instead of formmatted
-
-        console.log('place ', place);
-        console.log('place name ', place.name);
-        addRestaurantButton.text('Add ' + place.name);
-
-        newRestaurant.name = place.name;
-        newRestaurant.cuisineType = 'N/A';
-
-        //601 Queen Anne Ave N, Seattle, WA 98109, USA
-
-        var tempAddress = place.formatted_address.split(','); // TEMP ONLY, NOT ROBUST
-        newRestaurant.address = tempAddress[0];
-        newRestaurant.city = tempAddress[1];
-        newRestaurant.state = tempAddress[2].split(' ')[1];
-        newRestaurant.zip = tempAddress[2].split(' ')[2];
-        newRestaurant.website = place.website;
-        newRestaurant.rating = place.rating;
-
-
-        /////////////////////////////////
-
-
-
         infowindowContent.children['place-name'].textContent = place.name;
         infowindowContent.children['place-id'].textContent = place.place_id;
-        infowindowContent.children['place-address'].textContent =
-            place.formatted_address;
+        infowindowContent.children['place-address'].textContent = place.formatted_address;
         infowindow.open(map, marker);
+
+        handleNewPlace(place);
     });
 }
 
-function loadGooglePlaceIdFinder(apikey) {
-    var target = 'https://maps.googleapis.com/maps/api/js?key=' + apikey + '&libraries=places';
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Utility
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    console.log('target ', target);
+function appendToSheet() {
+    var appendData = {
+        "values": [
+            [newRestaurant.name,
+                newRestaurant.cuisineType,
+                newRestaurant.address,
+                newRestaurant.city,
+                newRestaurant.state,
+                newRestaurant.zip,
+                newRestaurant.website,
+                newRestaurant.rating,
+                null,
+                null,
+                null,
+                null,
+                null,
+                newRestaurant.coordinates.lat,
+                newRestaurant.coordinates.lng
+            ]
+        ]
+    };
 
-    $.getScript(target, function (data, textStatus, jqxhr) {
-        initMap();
+    var request = {
+        spreadsheetId: sheetId,
+        range: 'Restaurants',
+        valueInputOption: 'RAW',
+
+        resource: appendData
+    };
+
+    gapi.client.sheets.spreadsheets.values.append(request).then(function (response) {
+        // TODO: Response handler?
     });
+}
+
+function handleNewPlace(place) {
+    newRestaurant = newRestaurantDefault;
+
+    addRestaurantButton.text('Add ' + place.name);
+
+    newRestaurant.name = place.name || und;
+    newRestaurant.website = place.website || und;
+    newRestaurant.rating = place.rating || und;
+    newRestaurant.coordinates.lat = place.geometry.location.lat() || und;
+    newRestaurant.coordinates.lng = place.geometry.location.lng() || und;
+
+    parseAddressComponents(place.address_components);
 }
 
 function loadGoogleApi(apikey) {
     var target = 'https://apis.google.com/js/api.js';
-
-    console.log('target ', target);
 
     $.getScript(target, function (data, textStatus, jqxhr) {
         handleClientLoad();
     });
 }
 
-// Document Ready
+function loadGooglePlaceIdFinder(apikey) {
+    var target = 'https://maps.googleapis.com/maps/api/js?key=' + apikey + '&libraries=places';
+
+    $.getScript(target, function (data, textStatus, jqxhr) {
+        initMap();
+    });
+}
+
+function parseAddressComponents(components) {
+    components.forEach(function (component) {
+        component.types.forEach(function (type) {
+            var shortName = component.short_name;
+
+            if (type === 'street_number') {
+                newRestaurant.address = shortName;
+                return;
+            }
+
+            if (type === 'route') {
+                // TODO: Handle street_number and route better for cases where they don't exist
+                newRestaurant.address += ' ';
+                newRestaurant.address += shortName;
+                return;
+            }
+
+            if (type === 'locality') {
+                newRestaurant.city = shortName;
+                return;
+            }
+
+            if (type === 'administrative_area_level_1') {
+                newRestaurant.state = shortName;
+                return;
+            }
+
+            if (type === 'postal_code') {
+                newRestaurant.zip = parseInt(shortName);
+                return;
+            }
+        })
+    })
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+// Document Ready / Init
+/////////////////////////////////////////////////////////////////////////////////////////////////////
 $(function () {
     initModal = $('.initModal');
     mapContainer = $('.mapContainer');
