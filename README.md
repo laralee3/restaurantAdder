@@ -1,5 +1,5 @@
 # restaurantAdder
-Interface for quick adding restaurants to a personal project tableau import. 
+Interface for quick adding restaurants to a personal project tableau import. Hosted on github pages at [https://laralee3.github.io/restaurantAdder](https://laralee3.github.io/restaurantAdder)
 
 Currently US only. 
 
