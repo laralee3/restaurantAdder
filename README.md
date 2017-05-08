@@ -7,7 +7,7 @@ Currently US only.
 1) Go to [https://console.developers.google.com/](https://console.developers.google.com/)
 2) Make a new project if necessary (any name will do)
 3) In the dashboard, select "Enable API"
-4) Enable `Google Sheets API` and `Google Maps JavaScript API` for sheets and google places api respectively
+4) Enable `Google Sheets API`, `Google Places API Web Service`, and `Google Maps JavaScript API`
 5) Select the Credentials tab
 6) Select `Create Credentials` > `Api Key`
 7) Click edit on the newly created Api Key
