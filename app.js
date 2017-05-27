@@ -129,14 +129,14 @@ function initMap() {
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function appendToSheet() {
+    // TODO: Retrieve column headers and assign these values dynamically
     var appendData = {
         "values": [
             [newRestaurant.name,
                 newRestaurant.cuisineType,
-                newRestaurant.address,
-                newRestaurant.city,
-                newRestaurant.state,
-                newRestaurant.zip,
+                newRestaurant.formattedAddress,
+                newRestaurant.state || und,
+                newRestaurant.country || und,
                 newRestaurant.website,
                 newRestaurant.rating,
                 null,
@@ -169,6 +169,7 @@ function handleNewPlace(place) {
     addRestaurantButton.text('Add ' + place.name);
 
     newRestaurant.name = place.name || und;
+    newRestaurant.formattedAddress = place.formatted_address || und;
     newRestaurant.website = place.website || und;
     newRestaurant.rating = place.rating || und;
     newRestaurant.coordinates.lat = place.geometry.location.lat() || und;
@@ -198,30 +199,13 @@ function parseAddressComponents(components) {
         component.types.forEach(function (type) {
             var shortName = component.short_name;
 
-            if (type === 'street_number') {
-                newRestaurant.address = shortName;
-                return;
-            }
-
-            if (type === 'route') {
-                // TODO: Handle street_number and route better for cases where they don't exist
-                newRestaurant.address += ' ';
-                newRestaurant.address += shortName;
-                return;
-            }
-
-            if (type === 'locality') {
-                newRestaurant.city = shortName;
-                return;
-            }
-
             if (type === 'administrative_area_level_1') {
                 newRestaurant.state = shortName;
                 return;
             }
 
-            if (type === 'postal_code') {
-                newRestaurant.zip = parseInt(shortName);
+            if (type === 'country') {
+                newRestaurant.country = shortName;
                 return;
             }
         })
