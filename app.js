@@ -9,14 +9,10 @@ var mapContainer
 var newRestaurant = {};
 var oauthclientid;
 var service;
+var sheetHeaders;
 var sheetId;
+var sheetName = 'Restaurants_Formatted';
 var signoutButton;
-var und = 'undefined';
-
-var newRestaurantDefault = {
-    cuisineType: und,
-    coordinates: {}
-};
 
 var seattleCoord = {
     lat: 47.657714,
@@ -55,6 +51,7 @@ function updateSigninStatus(isSignedIn) {
     if (isSignedIn) {
         authorizeButton.hide();
         signoutButton.show();
+        getSheetHeaders();
     } else {
         addRestaurantButton.hide();
         authorizeButton.show();
@@ -129,51 +126,55 @@ function initMap() {
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function appendToSheet() {
-    // TODO: Retrieve column headers and assign these values dynamically
-    var appendData = {
-        "values": [
-            [newRestaurant.name,
-                newRestaurant.cuisineType,
-                newRestaurant.formattedAddress,
-                newRestaurant.state || und,
-                newRestaurant.country || und,
-                newRestaurant.website,
-                newRestaurant.rating,
-                null,
-                null,
-                null,
-                null,
-                null,
-                newRestaurant.coordinates.lat,
-                newRestaurant.coordinates.lng
-            ]
-        ]
-    };
+    var appendData = buildAppendValues();
 
     var request = {
         spreadsheetId: sheetId,
-        range: 'Restaurants',
+        range: sheetName,
         valueInputOption: 'RAW',
 
         resource: appendData
     };
 
     gapi.client.sheets.spreadsheets.values.append(request).then(function (response) {
-        // TODO: Response handler?
+        console.log('Append response: ', response);
+    });
+}
+
+function buildAppendValues() {
+    var tempArray = [];
+
+    for (var i = 0; i < sheetHeaders.length; i++) {
+        var headerId = sheetHeaders[i].toLowerCase().replace(/\s+/g, '');
+        tempArray[i] = newRestaurant.hasOwnProperty(headerId) ? newRestaurant[headerId] : null;
+    }
+
+    return {values: [tempArray]};
+}
+
+function getSheetHeaders() {
+    var request = {
+        spreadsheetId: sheetId,
+        range: sheetName + '!1:1'
+    };
+
+    gapi.client.sheets.spreadsheets.values.get(request).then(function (response) {
+        console.log('Get header values response: ', response);
+        sheetHeaders = response.result.values[0];
     });
 }
 
 function handleNewPlace(place) {
-    newRestaurant = newRestaurantDefault;
+    newRestaurant = {};
 
     addRestaurantButton.text('Add ' + place.name);
 
-    newRestaurant.name = place.name || und;
-    newRestaurant.formattedAddress = place.formatted_address || und;
-    newRestaurant.website = place.website || und;
-    newRestaurant.rating = place.rating || und;
-    newRestaurant.coordinates.lat = place.geometry.location.lat() || und;
-    newRestaurant.coordinates.lng = place.geometry.location.lng() || und;
+    newRestaurant.name = place.name;
+    newRestaurant.address_formatted = place.formatted_address;
+    newRestaurant.website = place.website;
+    newRestaurant.googlerating = place.rating;
+    newRestaurant.lat = place.geometry.location.lat();
+    newRestaurant.long = place.geometry.location.lng();
 
     parseAddressComponents(place.address_components);
 }
