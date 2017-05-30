@@ -61,9 +61,29 @@ You can utilize url parameters to make entering the required api key/oauth clien
 3) Use the search form on the map to find the desired restaurant
 4) Click the `Add`
 
-## Local Development
-### Ruby Server Start
-`ruby -rwebrick -e'WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd).start'`
+# Development
+
+## Requirements
+- Google account
+- git
+- node, python, ruby, or whatever other flavor language that can run a simple server. Node recommended
+
+## Recommended tools
+- Visual Studio Code or IDE/editor of choice
+- cmder (windows)
+
+## Quick Local Dev Servers
+### Node server
+Install http-server first via
+
+`npm install http-server -g`
+
+Then start the server via command line by running the following in the directory with the project files:
+
+`http-server -p 8000`
 
 ### Python Server Start
 `python -m SimpleHTTPServer`
+
+### Ruby Server Start
+`ruby -rwebrick -e'WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd).start'`

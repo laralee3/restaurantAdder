@@ -9,14 +9,10 @@ var mapContainer
 var newRestaurant = {};
 var oauthclientid;
 var service;
+var sheetHeaders;
 var sheetId;
+var sheetName = 'Restaurants_Formatted';
 var signoutButton;
-var und = 'undefined';
-
-var newRestaurantDefault = {
-    cuisineType: und,
-    coordinates: {}
-};
 
 var seattleCoord = {
     lat: 47.657714,
@@ -55,6 +51,7 @@ function updateSigninStatus(isSignedIn) {
     if (isSignedIn) {
         authorizeButton.hide();
         signoutButton.show();
+        getSheetHeaders();
     } else {
         addRestaurantButton.hide();
         authorizeButton.show();
@@ -129,50 +126,55 @@ function initMap() {
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function appendToSheet() {
-    var appendData = {
-        "values": [
-            [newRestaurant.name,
-                newRestaurant.cuisineType,
-                newRestaurant.address,
-                newRestaurant.city,
-                newRestaurant.state,
-                newRestaurant.zip,
-                newRestaurant.website,
-                newRestaurant.rating,
-                null,
-                null,
-                null,
-                null,
-                null,
-                newRestaurant.coordinates.lat,
-                newRestaurant.coordinates.lng
-            ]
-        ]
-    };
+    var appendData = buildAppendValues();
 
     var request = {
         spreadsheetId: sheetId,
-        range: 'Restaurants',
+        range: sheetName,
         valueInputOption: 'RAW',
 
         resource: appendData
     };
 
     gapi.client.sheets.spreadsheets.values.append(request).then(function (response) {
-        // TODO: Response handler?
+        console.log('Append response: ', response);
+    });
+}
+
+function buildAppendValues() {
+    var tempArray = [];
+
+    for (var i = 0; i < sheetHeaders.length; i++) {
+        var headerId = sheetHeaders[i].toLowerCase().replace(/\s+/g, '');
+        tempArray[i] = newRestaurant.hasOwnProperty(headerId) ? newRestaurant[headerId] : null;
+    }
+
+    return {values: [tempArray]};
+}
+
+function getSheetHeaders() {
+    var request = {
+        spreadsheetId: sheetId,
+        range: sheetName + '!1:1'
+    };
+
+    gapi.client.sheets.spreadsheets.values.get(request).then(function (response) {
+        console.log('Get header values response: ', response);
+        sheetHeaders = response.result.values[0];
     });
 }
 
 function handleNewPlace(place) {
-    newRestaurant = newRestaurantDefault;
+    newRestaurant = {};
 
     addRestaurantButton.text('Add ' + place.name);
 
-    newRestaurant.name = place.name || und;
-    newRestaurant.website = place.website || und;
-    newRestaurant.rating = place.rating || und;
-    newRestaurant.coordinates.lat = place.geometry.location.lat() || und;
-    newRestaurant.coordinates.lng = place.geometry.location.lng() || und;
+    newRestaurant.name = place.name;
+    newRestaurant.address_formatted = place.formatted_address;
+    newRestaurant.website = place.website;
+    newRestaurant.googlerating = place.rating;
+    newRestaurant.lat = place.geometry.location.lat();
+    newRestaurant.long = place.geometry.location.lng();
 
     parseAddressComponents(place.address_components);
 }
@@ -198,30 +200,13 @@ function parseAddressComponents(components) {
         component.types.forEach(function (type) {
             var shortName = component.short_name;
 
-            if (type === 'street_number') {
-                newRestaurant.address = shortName;
-                return;
-            }
-
-            if (type === 'route') {
-                // TODO: Handle street_number and route better for cases where they don't exist
-                newRestaurant.address += ' ';
-                newRestaurant.address += shortName;
-                return;
-            }
-
-            if (type === 'locality') {
-                newRestaurant.city = shortName;
-                return;
-            }
-
             if (type === 'administrative_area_level_1') {
                 newRestaurant.state = shortName;
                 return;
             }
 
-            if (type === 'postal_code') {
-                newRestaurant.zip = parseInt(shortName);
+            if (type === 'country') {
+                newRestaurant.country = shortName;
                 return;
             }
         })
