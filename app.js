@@ -145,7 +145,7 @@ function buildAppendValues() {
     var tempArray = [];
 
     for (var i = 0; i < sheetHeaders.length; i++) {
-        var headerId = sheetHeaders[i].toLowerCase().replace(/\s+/g, '');
+        var headerId = sheetHeaders[i].toLowerCase().replace(/\s+|\//g, '');
         tempArray[i] = newRestaurant.hasOwnProperty(headerId) ? newRestaurant[headerId] : null;
     }
 
@@ -201,7 +201,7 @@ function parseAddressComponents(components) {
             var shortName = component.short_name;
 
             if (type === 'administrative_area_level_1') {
-                newRestaurant.state = shortName;
+                newRestaurant.stateprovince = shortName;
                 return;
             }
 
