@@ -170,11 +170,13 @@ function handleNewPlace(place) {
     addRestaurantButton.text('Add ' + place.name);
 
     newRestaurant.name = place.name;
-    newRestaurant.address_formatted = place.formatted_address;
     newRestaurant.website = place.website;
     newRestaurant.googlerating = place.rating;
     newRestaurant.lat = place.geometry.location.lat();
     newRestaurant.long = place.geometry.location.lng();
+
+    // Strip country from the end
+    newRestaurant.address_formatted = place.formatted_address.substring(0, place.formatted_address.lastIndexOf(',')); 
 
     parseAddressComponents(place.address_components);
 }
