@@ -65,25 +65,18 @@ You can utilize url parameters to make entering the required api key/oauth clien
 
 ## Requirements
 - Google account
-- git
-- node, python, ruby, or whatever other flavor language that can run a simple server. Node recommended
+- git (for Windows, see cmder below)
+- [node](https://nodejs.org/en/)
 
-## Recommended tools
-- Visual Studio Code or IDE/editor of choice
-- cmder (windows)
+#### Recommended tools
+- [Visual Studio Code](https://code.visualstudio.com/) or IDE/editor of choice
+	- For VSCode, the ESLint and Debugger for Chrome extensions
+- [cmder](http://cmder.net/) (For Windows; will install git to cmder if the full version is used)
 
-## Quick Local Dev Servers
-### Node server
-Install http-server first via
-
-`npm install http-server -g`
-
-Then start the server via command line by running the following in the directory with the project files:
-
-`http-server -p 8000`
-
-### Python Server Start
-`python -m SimpleHTTPServer`
-
-### Ruby Server Start
-`ruby -rwebrick -e'WEBrick::HTTPServer.new(:Port => 8000, :DocumentRoot => Dir.pwd).start'`
+## Setup
+1) Install git (via cmder or otherwise for Windows) and node
+1) In terminal with node installed, run `npm install http-server -g` to install the http-server globally
+1) Clone the git project to your local folder: `git clone https://github.com/laralee3/restaurantAdder.git`
+1) Navigate to the project folder and run `npm install` to install dependencies
+1) Still in the project folder, run: `http-server -p 8000` to serve the project files
+1) Open `localhost:8000/index.html` in your browser
