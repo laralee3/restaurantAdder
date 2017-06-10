@@ -2,7 +2,6 @@ let addRestaurantButton;
 let apikey;
 let authorizeButton;
 let defaultZoom = 13;
-let gapi;
 let initModal;
 let mapContainer;
 let newRestaurant = {};
