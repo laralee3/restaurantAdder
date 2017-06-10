@@ -1,30 +1,27 @@
-var addRestaurantButton;
-var apikey;
-var authorizeButton;
-var defaultZoom = 13;
-var infoWindow;
-var initModal;
-var map;
-var mapContainer
-var newRestaurant = {};
-var oauthclientid;
-var service;
-var sheetHeaders;
-var sheetId;
-var sheetName = 'Restaurants_Formatted';
-var signoutButton;
+let addRestaurantButton;
+let apikey;
+let authorizeButton;
+let defaultZoom = 13;
+let initModal;
+let mapContainer;
+let newRestaurant = {};
+let oauthclientid;
+let sheetHeaders;
+let sheetId;
+let sheetName = 'Restaurants_Formatted';
+let signoutButton;
 
-var seattleCoord = {
+let seattleCoord = {
     lat: 47.657714,
     lng: -122.3498098
 };
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 // Google Api
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
-var DISCOVERY_DOCS = ["https://sheets.googleapis.com/$discovery/rest?version=v4"];
-var SCOPES = "https://www.googleapis.com/auth/spreadsheets";
+let DISCOVERY_DOCS = ['https://sheets.googleapis.com/$discovery/rest?version=v4'];
+let SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
 function handleClientLoad() {
     gapi.load('client:auth2', initClient);
@@ -35,7 +32,7 @@ function initClient() {
         discoveryDocs: DISCOVERY_DOCS,
         clientId: oauthclientid,
         scope: SCOPES
-    }).then(function () {
+    }).then(function() {
         // Listen for sign-in state changes.
         gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
 
@@ -68,33 +65,34 @@ function handleSignoutClick(event) {
 }
 
 function initMap() {
-    var map = new google.maps.Map(document.getElementById('map'), {
+    let map = new google.maps.Map(document.getElementById('map'), {
         center: seattleCoord,
         zoom: defaultZoom
     });
 
-    var input = document.getElementById('pac-input');
+    let input = document.getElementById('pac-input');
 
-    var autocomplete = new google.maps.places.Autocomplete(input);
+    let autocomplete = new google.maps.places.Autocomplete(input);
     autocomplete.bindTo('bounds', map);
 
     map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
 
-    var infowindow = new google.maps.InfoWindow();
-    var infowindowContent = document.getElementById('infowindow-content');
+    let infowindow = new google.maps.InfoWindow();
+    let infowindowContent = document.getElementById('infowindow-content');
     infowindow.setContent(infowindowContent);
-    var marker = new google.maps.Marker({
+    let marker = new google.maps.Marker({
         map: map
     });
 
-    marker.addListener('click', function () {
+    marker.addListener('click', function() {
         infowindow.open(map, marker);
     });
 
-    autocomplete.addListener('place_changed', function () {
-        addRestaurantButton.show(); // TODO: Inefficient, do this only once someplace else
+    autocomplete.addListener('place_changed', function() {
+        // TODO: Inefficient, do this only once someplace else
+        addRestaurantButton.show();
         infowindow.close();
-        var place = autocomplete.getPlace();
+        let place = autocomplete.getPlace();
         if (!place.geometry) {
             return;
         }
@@ -121,14 +119,14 @@ function initMap() {
     });
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 // Utility
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 
 function appendToSheet() {
-    var appendData = buildAppendValues();
+    let appendData = buildAppendValues();
 
-    var request = {
+    let request = {
         spreadsheetId: sheetId,
         range: sheetName,
         valueInputOption: 'RAW',
@@ -136,16 +134,16 @@ function appendToSheet() {
         resource: appendData
     };
 
-    gapi.client.sheets.spreadsheets.values.append(request).then(function (response) {
-        console.log('Append response: ', response);
-    });
+    gapi.client.sheets.spreadsheets.values.append(request).then(function(response) {
+            console.log('Append response: ', response);
+        });
 }
 
 function buildAppendValues() {
-    var tempArray = [];
+    let tempArray = [];
 
-    for (var i = 0; i < sheetHeaders.length; i++) {
-        var headerId = sheetHeaders[i].toLowerCase().replace(/\s+|\//g, '');
+    for (let i = 0; i < sheetHeaders.length; i++) {
+        let headerId = sheetHeaders[i].toLowerCase().replace(/\s+|\//g, '');
         tempArray[i] = newRestaurant.hasOwnProperty(headerId) ? newRestaurant[headerId] : null;
     }
 
@@ -153,15 +151,15 @@ function buildAppendValues() {
 }
 
 function getSheetHeaders() {
-    var request = {
+    let request = {
         spreadsheetId: sheetId,
         range: sheetName + '!1:1'
     };
 
-    gapi.client.sheets.spreadsheets.values.get(request).then(function (response) {
-        console.log('Get header values response: ', response);
-        sheetHeaders = response.result.values[0];
-    });
+    gapi.client.sheets.spreadsheets.values.get(request).then(function(response) {
+            console.log('Get header values response: ', response);
+            sheetHeaders = response.result.values[0];
+        });
 }
 
 function handleNewPlace(place) {
@@ -176,31 +174,33 @@ function handleNewPlace(place) {
     newRestaurant.long = place.geometry.location.lng();
 
     // Strip country from the end
-    newRestaurant.address_formatted = place.formatted_address.substring(0, place.formatted_address.lastIndexOf(',')); 
+    /* eslint-disable camelcase */
+    newRestaurant.address_formatted = place.formatted_address.substring(0, place.formatted_address.lastIndexOf(','));
+    /* eslint-enable */
 
     parseAddressComponents(place.address_components);
 }
 
 function loadGoogleApi(apikey) {
-    var target = 'https://apis.google.com/js/api.js';
+    let target = 'https://apis.google.com/js/api.js';
 
-    $.getScript(target, function (data, textStatus, jqxhr) {
+    $.getScript(target, function(data, textStatus, jqxhr) {
         handleClientLoad();
     });
 }
 
 function loadGooglePlaceIdFinder(apikey) {
-    var target = 'https://maps.googleapis.com/maps/api/js?key=' + apikey + '&libraries=places';
+    let target = 'https://maps.googleapis.com/maps/api/js?key=' + apikey + '&libraries=places';
 
-    $.getScript(target, function (data, textStatus, jqxhr) {
+    $.getScript(target, function(data, textStatus, jqxhr) {
         initMap();
     });
 }
 
 function parseAddressComponents(components) {
-    components.forEach(function (component) {
-        component.types.forEach(function (type) {
-            var shortName = component.short_name;
+    components.forEach(function(component) {
+        component.types.forEach(function(type) {
+            let shortName = component.short_name;
 
             if (type === 'administrative_area_level_1') {
                 newRestaurant.stateprovince = shortName;
@@ -211,14 +211,15 @@ function parseAddressComponents(components) {
                 newRestaurant.country = shortName;
                 return;
             }
-        })
-    })
+        });
+    });
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
+// /////////////////////////////////////////////////////////////////////////////
 // Document Ready / Init
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-$(function () {
+// /////////////////////////////////////////////////////////////////////////////
+
+$(function() {
     initModal = $('.initModal');
     mapContainer = $('.mapContainer');
     authorizeButton = $('#authorize-button');
@@ -227,11 +228,11 @@ $(function () {
 
     addRestaurantButton.click(appendToSheet);
 
-    var urlParams = new URLSearchParams(window.location.search);
+    let urlParams = new URLSearchParams(window.location.search);
 
-    var tempApiKey = urlParams.get('apiKey');
-    var tempOathId = urlParams.get('oathId');
-    var tempSheetId = urlParams.get('sheetId');
+    let tempApiKey = urlParams.get('apiKey');
+    let tempOathId = urlParams.get('oathId');
+    let tempSheetId = urlParams.get('sheetId');
 
     if (tempApiKey) {
         $('#authData .apikey').val(tempApiKey);
@@ -245,8 +246,8 @@ $(function () {
         $('#authData .sheetId').val(tempSheetId);
     }
 
-    //Event Handlers
-    $('#authData').submit(function (e) {
+    // Event Handlers
+    $('#authData').submit(function(e) {
         e.preventDefault();
         apikey = $('#authData .apikey').val();
         oauthclientid = $('#authData .oauthclientid').val();

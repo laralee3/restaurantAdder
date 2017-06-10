@@ -1,0 +1,20 @@
+{
+  "name": "restaurant-adder",
+  "version": "1.0.0",
+  "author": "Lara Lee",
+  "license": "MIT",
+  "description": "Interface for quick adding restaurants to tableau import",
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laralee3/restaurantAdder.git"
+  },
+  "homepage": "https://github.com/laralee3/restaurantAdder#readme",
+  "bugs": {
+    "url": "https://github.com/laralee3/restaurantAdder/issues"
+  },
+  "scripts": {},
+  "devDependencies": {
+    "eslint": "^3.19.0"
+  }
+}
