@@ -78,5 +78,5 @@ You can utilize url parameters to make entering the required api key/oauth clien
 1) In terminal with node installed, run `npm install http-server -g` to install the http-server globally
 1) Clone the git project to your local folder: `git clone https://github.com/laralee3/restaurantAdder.git`
 1) Navigate to the project folder and run `npm install` to install dependencies
-1) Still in the project folder, run: `http-server -p 8000` to serve the project files
+1) Still in the project folder, run: `npm run serve` to serve the project files
 1) Open `localhost:8000/index.html` in your browser

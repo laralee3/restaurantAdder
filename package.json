@@ -13,8 +13,12 @@
   "bugs": {
     "url": "https://github.com/laralee3/restaurantAdder/issues"
   },
-  "scripts": {},
+  "scripts": {
+    "serve": "http-server ./src -p 8000"
+  },
   "devDependencies": {
+    "babel-cli": "^6.24.1",
+    "babel-preset-env": "^1.5.2",
     "eslint": "^3.19.0"
   }
 }
