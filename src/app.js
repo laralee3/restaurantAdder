@@ -2,19 +2,138 @@ let addRestaurantButton;
 let apikey;
 let authorizeButton;
 let defaultZoom = 13;
-let initModal;
+let existingRestaurantNames;
+let map;
 let mapContainer;
+let modalWrapper;
 let newRestaurant = {};
 let oauthclientid;
+let place;
 let sheetHeaders;
 let sheetId;
 let sheetName = 'Restaurants_Formatted';
 let signoutButton;
 
+let foodTypes = [
+    'bakery',
+    'bar',
+    'cafe',
+    'food',
+    'meal_delivery',
+    'meal_takeaway',
+    'restaurant'
+];
+
 let seattleCoord = {
     lat: 47.657714,
     lng: -122.3498098
 };
+
+// TODO: Move this out and implement webpack/rollout/babel
+let mapStyles = [
+            {
+                'featureType': 'landscape',
+                'stylers': [
+                    {
+                        'hue': '#FFBB00'
+                    },
+                    {
+                        'saturation': 43.400000000000006
+                    },
+                    {
+                        'lightness': 37.599999999999994
+                    },
+                    {
+                        'gamma': 1
+                    }
+                ]
+            },
+            {
+                'featureType': 'road.highway',
+                'stylers': [
+                    {
+                        'hue': '#FFC200'
+                    },
+                    {
+                        'saturation': -61.8
+                    },
+                    {
+                        'lightness': 45.599999999999994
+                    },
+                    {
+                        'gamma': 1
+                    }
+                ]
+            },
+            {
+                'featureType': 'road.arterial',
+                'stylers': [
+                    {
+                        'hue': '#FF0300'
+                    },
+                    {
+                        'saturation': -100
+                    },
+                    {
+                        'lightness': 51.19999999999999
+                    },
+                    {
+                        'gamma': 1
+                    }
+                ]
+            },
+            {
+                'featureType': 'road.local',
+                'stylers': [
+                    {
+                        'hue': '#FF0300'
+                    },
+                    {
+                        'saturation': -100
+                    },
+                    {
+                        'lightness': 52
+                    },
+                    {
+                        'gamma': 1
+                    }
+                ]
+            },
+            {
+                'featureType': 'water',
+                'stylers': [
+                    {
+                        'hue': '#0078FF'
+                    },
+                    {
+                        'saturation': -13.200000000000003
+                    },
+                    {
+                        'lightness': 2.4000000000000057
+                    },
+                    {
+                        'gamma': 1
+                    }
+                ]
+            },
+            {
+                'featureType': 'poi',
+                'stylers': [
+                    {
+                        'hue': '#00FF6A'
+                    },
+                    {
+                        'saturation': -1.0989010989011234
+                    },
+                    {
+                        'lightness': 11.200000000000017
+                    },
+                    {
+                        'gamma': 1
+                    }
+                ]
+            }
+        ];
 
 // /////////////////////////////////////////////////////////////////////////////
 // Google Api
@@ -65,9 +184,18 @@ function handleSignoutClick(event) {
 }
 
 function initMap() {
-    let map = new google.maps.Map(document.getElementById('map'), {
+    map = new google.maps.Map(document.getElementById('map'), {
         center: seattleCoord,
-        zoom: defaultZoom
+        zoom: defaultZoom,
+        mapTypeControl: false,
+        zoomControl: false,
+        fullscreenControl: false,
+        streetViewControl: false,
+        styles: mapStyles
+    });
+
+    google.maps.event.addListenerOnce(map, 'idle', function() {
+        modalWrapper.hide();
     });
 
     let input = document.getElementById('pac-input');
@@ -77,22 +205,14 @@ function initMap() {
 
     map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
 
-    let infowindow = new google.maps.InfoWindow();
-    let infowindowContent = document.getElementById('infowindow-content');
-    infowindow.setContent(infowindowContent);
     let marker = new google.maps.Marker({
         map: map
     });
 
-    marker.addListener('click', function() {
-        infowindow.open(map, marker);
-    });
-
     autocomplete.addListener('place_changed', function() {
-        // TODO: Inefficient, do this only once someplace else
+        place = autocomplete.getPlace();
         addRestaurantButton.show();
-        infowindow.close();
-        let place = autocomplete.getPlace();
+
         if (!place.geometry) {
             return;
         }
@@ -110,12 +230,17 @@ function initMap() {
         });
         marker.setVisible(true);
 
-        infowindowContent.children['place-name'].textContent = place.name;
-        infowindowContent.children['place-id'].textContent = place.place_id;
-        infowindowContent.children['place-address'].textContent = place.formatted_address;
-        infowindow.open(map, marker);
+        if (!isFoodPlace(place.types)) {
+            disableAddButton('Place type: ' + place.types[0]);
+            return;
+        }
 
-        handleNewPlace(place);
+        if (isAlreadyAdded(place.name) !== -1) {
+            disableAddButton(place.name + ' already added');
+            return;
+        }
+
+        handleNewRestaurant(place);
     });
 }
 
@@ -124,6 +249,8 @@ function initMap() {
 // /////////////////////////////////////////////////////////////////////////////
 
 function appendToSheet() {
+    disableAddButton();
+
     let appendData = buildAppendValues();
 
     let request = {
@@ -135,8 +262,12 @@ function appendToSheet() {
     };
 
     gapi.client.sheets.spreadsheets.values.append(request).then(function(response) {
-            console.log('Append response: ', response);
-        });
+        if (response.status === 200) {
+            existingRestaurantNames.push(place.name);
+        }
+
+        disableAddButton('Added!');
+    });
 }
 
 function buildAppendValues() {
@@ -150,6 +281,38 @@ function buildAppendValues() {
     return {values: [tempArray]};
 }
 
+function isAlreadyAdded(placeName) {
+    return existingRestaurantNames.findIndex(function(restaurant) {
+        return restaurant === placeName;
+    });
+}
+
+function disableAddButton(buttonText) {
+    if (buttonText) {
+        addRestaurantButton.text(buttonText);
+    }
+
+    addRestaurantButton.prop('disabled', true);
+    addRestaurantButton.css('opacity', 0.5);
+}
+
+function isFoodPlace(placeTypes) {
+    let isFood = false;
+
+    for (let i = 0, len = placeTypes.length; i < len; i++) {
+        let foodIndex = foodTypes.findIndex(function(foodType) {
+            return foodType === placeTypes[i];
+        });
+
+        if (foodIndex > -1) {
+            isFood = true;
+            break;
+        }
+    }
+
+    return isFood;
+}
+
 function getSheetHeaders() {
     let request = {
         spreadsheetId: sheetId,
@@ -157,14 +320,35 @@ function getSheetHeaders() {
     };
 
     gapi.client.sheets.spreadsheets.values.get(request).then(function(response) {
-            console.log('Get header values response: ', response);
-            sheetHeaders = response.result.values[0];
+        sheetHeaders = response.result.values[0];
+
+        let nameIndex = sheetHeaders.findIndex(function(sheetHeader) {
+            return sheetHeader.toLowerCase() === 'name';
         });
+
+        getExistingRestaurantNames(nameIndex);
+    });
 }
 
-function handleNewPlace(place) {
+function getExistingRestaurantNames(nameIndex) {
+    // Only works within 26 columns, but it would be crazy to have that many
+    let column = String.fromCharCode(65 + nameIndex);
+    let request = {
+        spreadsheetId: sheetId,
+        range: sheetName + '!' + column + '2:' + column,
+        majorDimension: 'COLUMNS'
+    };
+
+    gapi.client.sheets.spreadsheets.values.get(request).then(function(response) {
+        existingRestaurantNames = response.result.values[0];
+    });
+}
+
+function handleNewRestaurant(place) {
     newRestaurant = {};
 
+    addRestaurantButton.prop('disabled', false);
+    addRestaurantButton.css('opacity', 1);
     addRestaurantButton.text('Add ' + place.name);
 
     newRestaurant.name = place.name;
@@ -220,7 +404,7 @@ function parseAddressComponents(components) {
 // /////////////////////////////////////////////////////////////////////////////
 
 $(function() {
-    initModal = $('.initModal');
+    modalWrapper = $('.modalWrapper');
     mapContainer = $('.mapContainer');
     authorizeButton = $('#authorize-button');
     signoutButton = $('#signout-button');
@@ -253,7 +437,6 @@ $(function() {
         oauthclientid = $('#authData .oauthclientid').val();
         sheetId = $('#authData .sheetId').val();
 
-        initModal.hide();
         mapContainer.show();
         loadGooglePlaceIdFinder(apikey);
         loadGoogleApi();
